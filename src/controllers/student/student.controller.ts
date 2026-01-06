@@ -3,7 +3,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import { ApiError } from "../../utils/apiError.js";
 import type { Response, Request, NextFunction } from "express";
-
+import { sendMail } from "../../utils/sendMail.js";
 
 const createStudent = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
 
@@ -25,7 +25,7 @@ const createStudent = asyncHandler(async (req: Request, res: Response, next: Nex
         throw new ApiError(400, "Token not generated");
     }
 
-
+    await sendMail(newStudent.email, "Welcome to InterPrep", "Welcome to InterPrep. Your account has been created successfully");
 
     return apiResponse(res, 200, "Student created successfully", { ...newStudent, token })
 })
