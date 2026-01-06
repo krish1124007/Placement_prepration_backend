@@ -84,7 +84,7 @@ export const startPreliminaryPhase = asyncHandler(async (req: Request, res: Resp
 
     session.status = "preliminary";
     session.startedAt = new Date();
-    session.preliminaryQuestions = preliminaryQuestions;
+    session.preliminaryQuestions = preliminaryQuestions as any;
     await session.save();
 
     return apiResponse(res, 200, "Preliminary phase started", {
@@ -116,7 +116,7 @@ export const submitPreliminaryAnswers = asyncHandler(async (req: Request, res: R
     }
 
     // Save answers
-    session.preliminaryAnswers = answers;
+    session.preliminaryAnswers = answers as any;
     session.preliminaryEndedAt = new Date();
 
     // Analyze answers using AI
@@ -155,7 +155,7 @@ export const startCodingPhase = asyncHandler(async (req: Request, res: Response,
 
     session.status = "coding";
     session.codingStartedAt = new Date();
-    session.codingQuestions = questions;
+    session.codingQuestions = questions as any;
     await session.save();
 
     return apiResponse(res, 200, "Coding phase started", {
@@ -218,10 +218,10 @@ export const submitCodeSolution = asyncHandler(async (req: Request, res: Respons
 
     if (existingIndex >= 0) {
         // Update existing solution
-        session.userSolutions[existingIndex] = solution;
+        session.userSolutions[existingIndex] = solution as any;
     } else {
         // Add new solution
-        session.userSolutions.push(solution);
+        session.userSolutions.push(solution as any);
     }
 
     await session.save();
