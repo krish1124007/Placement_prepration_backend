@@ -204,10 +204,50 @@ const getScheduleTasks = asyncHandler(async (req: Request, res: Response, next: 
     });
 });
 
+const updateTaskCompletion = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+    const { section, index, subIndex, completed } = req.body;
+
+    if (!id || section === undefined || index === undefined || completed === undefined) {
+        throw new ApiError(400, "Missing required fields");
+    }
+
+    const planDoc = await Planner.findById(id);
+    if (!planDoc) {
+        throw new ApiError(404, "Plan not found");
+    }
+
+    const plan = await Plan.findById(planDoc.plan);
+    if (!plan) {
+        throw new ApiError(404, "Plan details not found");
+    }
+
+    // Update the completion status based on section
+    if (section === 'aptitude' && plan.aptitude && plan.aptitude[index]) {
+        plan.aptitude[index].competition = completed;
+    } else if (section === 'dsa' && plan.dsa && plan.dsa[index]) {
+        plan.dsa[index].competition = completed;
+    } else if (section === 'subject' && plan.subject && plan.subject[index]) {
+        if (subIndex !== undefined && plan.subject[index].topics && plan.subject[index].topics[subIndex]) {
+            plan.subject[index].topics[subIndex].competition = completed;
+        }
+    } else {
+        throw new ApiError(400, "Invalid task reference");
+    }
+
+    await plan.save();
+
+    return apiResponse(res, 200, "Task updated successfully", {
+        status: "success",
+        data: plan
+    });
+});
+
 export {
     createPlan,
     savePlan,
     getMyAllPlan,
     getPlanDetails,
-    getScheduleTasks
+    getScheduleTasks,
+    updateTaskCompletion
 }

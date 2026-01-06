@@ -3,3 +3,8 @@ function dsaScreen(topic:string):string{
 }
 
 
+function drwaingScren(topic:string):string{
+    return "open the Drawing screen"
+}
+
+

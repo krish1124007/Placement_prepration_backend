@@ -1,4 +1,4 @@
-import type  { IInterviewSession } from "../interfaces/interview.interfaces.js";
+import type { IInterviewSession } from "../interfaces/interview.interfaces.js";
 import mongoose from "mongoose";
 
 type IInterviewSessionDocument = IInterviewSession & mongoose.Document
@@ -62,6 +62,32 @@ const InterviewSessionSchema = new mongoose.Schema<IInterviewSessionDocument>({
     feedback: {
         type: String,
         required: false
+    },
+    // Performance Analysis
+    performanceAnalysis: {
+        overallScore: {
+            type: Number,
+            default: 0
+        },
+        breakdown: {
+            technicalKnowledge: Number,
+            communication: Number,
+            problemSolving: Number,
+            confidence: Number,
+            clarity: Number
+        },
+        strengths: [String],
+        weaknesses: [String],
+        improvements: [String],
+        detailedFeedback: String,
+        grade: String,
+        analyzedAt: Date
+    },
+    interviewSummary: {
+        keyTopicsCovered: [String],
+        questionCount: Number,
+        responseQuality: String,
+        summary: String
     }
 }, { timestamps: true })
 

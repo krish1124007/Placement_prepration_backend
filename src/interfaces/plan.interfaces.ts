@@ -1,27 +1,28 @@
-import type {Document} from "mongoose";
+import type { Document } from "mongoose";
 
 
 type datetopic = {
-    date:string;
-    topic:string;
+    date: string;
+    topic: string;
+    competition?: boolean;
 }
 
 type subject = {
-    name:string;
-    topics:datetopic[];
-
+    name: string;
+    topics: datetopic[];
+    competition?: boolean;
 }
 
 
 interface IPlan extends Document {
 
-    aptitude?:datetopic[];
-    dsa?:datetopic[];
-    subject?:subject[];
-    
+    aptitude?: datetopic[];
+    dsa?: datetopic[];
+    subject?: subject[];
+
 }
 
 
-export  type {
+export type {
     IPlan
 }

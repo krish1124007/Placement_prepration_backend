@@ -5,6 +5,8 @@ import { ApiError } from "../../utils/apiError.js";
 import mongoose from "mongoose";
 import type { Response, Request, NextFunction } from "express";
 import * as geminiService from "../../services/gemini.service.js";
+import * as interviewAnalysisService from "../../services/interviewAnalysis.service.js";
+import { sendMail } from "../../utils/sendMail.js";
 
 
 // Create new interview session
@@ -118,10 +120,12 @@ const chatWithAI = asyncHandler(async (req: Request, res: Response, next: NextFu
 
         await InterviewSession.findByIdAndUpdate(sessionId, {
             $push: {
-                transcriptions: [
-                    { speaker: "User", text: message, timestamp },
-                    { speaker: "AI", text: aiResponse, timestamp: timestamp + 1 }
-                ]
+                transcriptions: {
+                    $each: [
+                        { speaker: "User", text: message, timestamp },
+                        { speaker: "AI", text: aiResponse, timestamp: timestamp + 1 }
+                    ]
+                }
             }
         });
 
@@ -185,7 +189,100 @@ const endInterview = asyncHandler(async (req: Request, res: Response, next: Next
         session.feedback = feedback;
     }
 
+    // Analyze interview performance if there are transcriptions
+    if (session.transcriptions && session.transcriptions.length > 0) {
+        try {
+            // Generate performance analysis
+            const performanceAnalysis = await interviewAnalysisService.analyzeInterviewPerformance(
+                session.topic,
+                session.level,
+                session.transcriptions,
+                duration
+            );
+
+            // Generate interview summary
+            const interviewSummary = await interviewAnalysisService.generateInterviewSummary(
+                session.topic,
+                session.transcriptions
+            );
+
+            // Save analysis to session
+            session.performanceAnalysis = {
+                ...performanceAnalysis,
+                analyzedAt: new Date()
+            };
+
+            session.interviewSummary = interviewSummary;
+
+            console.log(`✅ Interview analyzed: Score ${performanceAnalysis.overallScore}/100, Grade: ${performanceAnalysis.grade}`);
+        } catch (error) {
+            console.error("Failed to analyze interview:", error);
+            // Continue without analysis - don't fail the interview end
+        }
+    }
+
     await session.save();
+
+    // Send email with scorecard
+    if (session.performanceAnalysis && session.userId) {
+        try {
+            const populatedSession = await InterviewSession.findById(sessionId).populate("userId", "name email");
+            const userEmail = (populatedSession?.userId as any)?.email;
+            const userName = (populatedSession?.userId as any)?.name;
+
+            if (userEmail) {
+                const emailSubject = `Interview Scorecard - ${session.topic}`;
+                const emailBody = `
+Dear ${userName},
+
+Congratulations on completing your interview for ${session.topic}!
+
+Here's your performance summary:
+
+📊 OVERALL SCORE: ${session.performanceAnalysis.overallScore}/100
+🎓 GRADE: ${session.performanceAnalysis.grade}
+
+PERFORMANCE BREAKDOWN:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Technical Knowledge: ${session.performanceAnalysis.breakdown.technicalKnowledge}/100
+• Communication: ${session.performanceAnalysis.breakdown.communication}/100
+• Problem Solving: ${session.performanceAnalysis.breakdown.problemSolving}/100
+• Confidence: ${session.performanceAnalysis.breakdown.confidence}/100
+• Clarity: ${session.performanceAnalysis.breakdown.clarity}/100
+
+✅ STRENGTHS:
+${session.performanceAnalysis.strengths.map((s, i) => `${i + 1}. ${s}`).join('\n')}
+
+⚠️ AREAS FOR IMPROVEMENT:
+${session.performanceAnalysis.weaknesses.map((w, i) => `${i + 1}. ${w}`).join('\n')}
+
+💡 RECOMMENDATIONS:
+${session.performanceAnalysis.improvements.map((imp, i) => `${i + 1}. ${imp}`).join('\n')}
+
+📝 DETAILED FEEDBACK:
+${session.performanceAnalysis.detailedFeedback}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Interview Details:
+• Duration: ${Math.floor((session.duration || 0) / 60)}m ${(session.duration || 0) % 60}s
+• Level: ${session.level}
+• Date: ${new Date().toLocaleDateString()}
+
+Keep practicing and improving! 🚀
+
+Best regards,
+Interview Prep Team
+                `;
+
+                await sendMail(userEmail, emailSubject, emailBody);
+                console.log(`📧 Scorecard email sent to ${userEmail}`);
+            }
+        } catch (emailError) {
+            console.error("Failed to send scorecard email:", emailError);
+            // Don't fail the interview end if email fails
+        }
+    }
 
     // Clear session history from memory
     geminiService.clearSessionHistory(sessionId as string);
@@ -206,6 +303,57 @@ const getGeminiApiKey = asyncHandler(async (req: Request, res: Response, next: N
 });
 
 
+// Get Interview Scorecard
+const getInterviewScorecard = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    const { sessionId } = req.params;
+
+    const session = await InterviewSession.findById(sessionId).populate("userId", "name email");
+
+    if (!session) {
+        throw new ApiError(404, "Interview session not found");
+    }
+
+    if (session.status !== "completed") {
+        throw new ApiError(400, "Interview is not completed yet");
+    }
+
+    // Calculate performance metrics
+    const metrics = interviewAnalysisService.calculatePerformanceMetrics(
+        session.transcriptions,
+        session.duration || 0
+    );
+
+    const scorecard = {
+        sessionId: session._id,
+        user: session.userId,
+        topic: session.topic,
+        level: session.level,
+        status: session.status,
+
+        // Timing
+        startedAt: session.startedAt,
+        endedAt: session.endedAt,
+        duration: session.duration,
+        durationFormatted: `${Math.floor((session.duration || 0) / 60)}m ${(session.duration || 0) % 60}s`,
+
+        // Performance Analysis
+        performanceAnalysis: session.performanceAnalysis || null,
+        interviewSummary: session.interviewSummary || null,
+
+        // Metrics
+        metrics,
+
+        // Transcriptions count
+        totalExchanges: session.transcriptions?.length || 0,
+
+        // Feedback
+        feedback: session.feedback
+    };
+
+    return apiResponse(res, 200, "Scorecard fetched successfully", scorecard);
+});
+
+
 export {
     createInterviewSession,
     getInterviewSession,
@@ -214,5 +362,6 @@ export {
     chatWithAI,
     saveTranscription,
     endInterview,
-    getGeminiApiKey
+    getGeminiApiKey,
+    getInterviewScorecard
 }

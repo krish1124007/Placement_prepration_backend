@@ -6,6 +6,30 @@ export interface ITranscription {
     timestamp: number;
 }
 
+export interface IPerformanceAnalysis {
+    overallScore: number;
+    breakdown: {
+        technicalKnowledge: number;
+        communication: number;
+        problemSolving: number;
+        confidence: number;
+        clarity: number;
+    };
+    strengths: string[];
+    weaknesses: string[];
+    improvements: string[];
+    detailedFeedback: string;
+    grade: string;
+    analyzedAt?: Date;
+}
+
+export interface IInterviewSummary {
+    keyTopicsCovered: string[];
+    questionCount: number;
+    responseQuality: string;
+    summary: string;
+}
+
 interface IInterviewSession extends Document {
     userId: Types.ObjectId;
     topic: string;
@@ -18,6 +42,8 @@ interface IInterviewSession extends Document {
     endedAt?: Date;
     duration?: number;
     feedback?: string;
+    performanceAnalysis?: IPerformanceAnalysis;
+    interviewSummary?: IInterviewSummary;
 }
 
 export type {

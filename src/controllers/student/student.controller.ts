@@ -27,6 +27,9 @@ const createStudent = asyncHandler(async (req: Request, res: Response, next: Nex
 
     await sendMail(newStudent.email, "Welcome to InterPrep", "Welcome to InterPrep. Your account has been created successfully");
 
+    // Add a slight delay to allow the frontend airplane animation to play fully
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
     return apiResponse(res, 200, "Student created successfully", { ...newStudent, token })
 })
 
@@ -56,6 +59,9 @@ const login = asyncHandler(async (req: Request, res: Response, next: NextFunctio
     if (!token) {
         throw new ApiError(400, "Token not generated");
     }
+
+    // Add a slight delay to allow the frontend airplane animation to play fully
+    await new Promise(resolve => setTimeout(resolve, 2000));
 
     return apiResponse(res, 200, "Student logged in successfully", { ...student, token })
 })
@@ -152,6 +158,9 @@ const googleLogin = asyncHandler(async (req: Request, res: Response, next: NextF
         const studentObject = student.toObject();
         delete studentObject.password;
 
+        // Add a slight delay to allow the frontend airplane animation to play fully
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
         return apiResponse(res, 200, "Login successful", { ...studentObject, token });
     } catch (error: any) {
         throw new ApiError(400, error.message || "Google login failed");
@@ -211,6 +220,9 @@ const googleSignup = asyncHandler(async (req: Request, res: Response, next: Next
         // Convert to plain object and remove password
         const studentObject = student.toObject();
         delete studentObject.password;
+
+        // Add a slight delay to allow the frontend airplane animation to play fully
+        await new Promise(resolve => setTimeout(resolve, 2000));
 
         return apiResponse(res, 200, "Signup successful", { ...studentObject, token });
     } catch (error: any) {

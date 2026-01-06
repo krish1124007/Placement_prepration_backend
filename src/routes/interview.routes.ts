@@ -6,7 +6,8 @@ import {
     chatWithAI,
     saveTranscription,
     endInterview,
-    getGeminiApiKey
+    getGeminiApiKey,
+    getInterviewScorecard
 } from "../controllers/interview/interview.controller.js";
 import { Router } from "express";
 
@@ -20,5 +21,6 @@ router.post("/chat/:sessionId", chatWithAI);
 router.post("/transcription/:sessionId", saveTranscription);
 router.post("/end/:sessionId", endInterview);
 router.get("/gemini-key", getGeminiApiKey);
+router.get("/scorecard/:sessionId", getInterviewScorecard);
 
 export const interview_router = router;
