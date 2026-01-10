@@ -25,7 +25,7 @@ const createStudent = asyncHandler(async (req: Request, res: Response, next: Nex
         throw new ApiError(400, "Token not generated");
     }
 
-    await sendMail(newStudent.email, "Welcome to InterPrep", "Welcome to InterPrep. Your account has been created successfully");
+    sendMail(newStudent.email, "Welcome to InterPrep", "Welcome to InterPrep. Your account has been created successfully");
 
     // Add a slight delay to allow the frontend airplane animation to play fully
     await new Promise(resolve => setTimeout(resolve, 2000));
