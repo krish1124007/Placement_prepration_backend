@@ -25,12 +25,16 @@ const createStudent = asyncHandler(async (req: Request, res: Response, next: Nex
         throw new ApiError(400, "Token not generated");
     }
 
+    // Convert to plain object and remove password
+    const studentObject = newStudent.toObject();
+    delete studentObject.password;
+
     sendMail(newStudent.email, "Welcome to InterPrep", "Welcome to InterPrep. Your account has been created successfully");
 
     // Add a slight delay to allow the frontend airplane animation to play fully
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    return apiResponse(res, 200, "Student created successfully", { ...newStudent, token })
+    return apiResponse(res, 200, "Student created successfully", { ...studentObject, token })
 })
 
 
@@ -60,10 +64,14 @@ const login = asyncHandler(async (req: Request, res: Response, next: NextFunctio
         throw new ApiError(400, "Token not generated");
     }
 
+    // Convert to plain object and remove password
+    const studentObject = student.toObject();
+    delete studentObject.password;
+
     // Add a slight delay to allow the frontend airplane animation to play fully
     await new Promise(resolve => setTimeout(resolve, 2000));
 
-    return apiResponse(res, 200, "Student logged in successfully", { ...student, token })
+    return apiResponse(res, 200, "Student logged in successfully", { ...studentObject, token })
 })
 
 

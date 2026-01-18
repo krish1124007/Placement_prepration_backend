@@ -11,11 +11,41 @@ import { sendMail } from "../../utils/sendMail.js";
 
 // Create new interview session
 const createInterviewSession = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    console.log('📥 Received interview session creation request');
+    console.log('Request body:', req.body);
+    console.log('Headers:', req.headers);
+
     const { userId, topic, description, level, tone } = req.body;
 
-    if (!userId || !topic || !level) {
-        throw new ApiError(400, "User ID, topic, and level are required");
+    // Detailed validation with specific error messages
+    if (!userId) {
+        console.error('❌ Validation failed: userId is missing');
+        throw new ApiError(400, "User ID is required");
     }
+
+    if (!topic) {
+        console.error('❌ Validation failed: topic is missing');
+        throw new ApiError(400, "Topic is required");
+    }
+
+    if (!level) {
+        console.error('❌ Validation failed: level is missing');
+        throw new ApiError(400, "Level is required");
+    }
+
+    // Validate userId format
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+        console.error('❌ Validation failed: Invalid userId format:', userId);
+        throw new ApiError(400, "Invalid User ID format");
+    }
+
+    console.log('✅ Validation passed, creating session with:', {
+        userId,
+        topic,
+        description,
+        level,
+        tone: tone || "Professional"
+    });
 
     const session = await InterviewSession.create({
         userId: new mongoose.Types.ObjectId(userId),
@@ -27,9 +57,11 @@ const createInterviewSession = asyncHandler(async (req: Request, res: Response, 
     });
 
     if (!session) {
+        console.error('❌ Failed to create session in database');
         throw new ApiError(400, "Failed to create interview session");
     }
 
+    console.log('✅ Interview session created successfully:', session._id);
     return apiResponse(res, 200, "Interview session created successfully", session);
 });
 
