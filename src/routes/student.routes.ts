@@ -11,6 +11,7 @@ import {
     getUserPublic,
     toggleUltraFocusMode
 } from "../controllers/student/student.controller.js";
+import { getUserHistory } from "../controllers/student/history.controller.js";
 import { Router } from "express";
 import { auth } from "../middlewares/auth.js";
 
@@ -26,6 +27,7 @@ router.get("/github-repos/:userid", auth, getGithubRepos);
 router.put("/edit-user/:userid", auth, editUser);
 router.get("/user/:userid", auth, getUser);
 router.get("/public/:userid", getUserPublic); // Public endpoint for portfolio
+router.get("/history", auth, getUserHistory); // Get user's complete history
 router.put("/toggle-ultra-focus/:userid", auth, toggleUltraFocusMode);
 
 export const user_router = router;
