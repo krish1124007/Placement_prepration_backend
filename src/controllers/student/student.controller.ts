@@ -361,6 +361,38 @@ const getUserPublic = asyncHandler(async (req: Request, res: Response, next: Nex
 });
 
 
+// Toggle ultra focus mode
+const toggleUltraFocusMode = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    const { userid } = req.params;
+    let { ultra_focus_mode } = req.body;
+
+    if (!userid) {
+        throw new ApiError(400, "User id is required");
+    }
+
+    // Convert string to boolean if needed (handles "true"/"false" strings from mobile apps)
+    if (typeof ultra_focus_mode === "string") {
+        ultra_focus_mode = ultra_focus_mode.toLowerCase() === "true";
+    }
+
+    if (typeof ultra_focus_mode !== "boolean") {
+        throw new ApiError(400, "ultra_focus_mode must be a boolean value");
+    }
+
+    const updatedStudent = await Student.findByIdAndUpdate(
+        userid,
+        { ultra_focus_mode },
+        { new: true }
+    ).select("-password");
+
+    if (!updatedStudent) {
+        throw new ApiError(404, "Student not found");
+    }
+
+    return apiResponse(res, 200, "Ultra focus mode updated successfully", updatedStudent);
+});
+
+
 export {
     createStudent,
     login,
@@ -371,5 +403,6 @@ export {
     connectGithub,
     disconnectGithub,
     getGithubRepos,
-    getUserPublic
+    getUserPublic,
+    toggleUltraFocusMode
 }

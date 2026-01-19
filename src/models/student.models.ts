@@ -88,6 +88,10 @@ const StudentSchema = new mongoose.Schema<IStudentDocument>({
     },
     interests: {
         type: [String]
+    },
+    ultra_focus_mode: {
+        type: Boolean,
+        default: false
     }
 })
 
