@@ -3,10 +3,11 @@ import { Plan } from "../../models/plan.models.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { apiResponse } from "../../utils/apiResponse.js";
 import { ApiError } from "../../utils/apiError.js";
+import type { Request, Response, NextFunction } from "express";
 
 // Get combined history (interviews + plans) for a user
-export const getUserHistory = asyncHandler(async (req, res, next) => {
-    const userId = req.user?._id;
+export const getUserHistory = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    const userId = (req.user as any)?._id;
 
     if (!userId) {
         throw new ApiError(401, "Unauthorized");
@@ -19,9 +20,9 @@ export const getUserHistory = asyncHandler(async (req, res, next) => {
         .limit(50)
         .lean();
 
-    // Fetch all plans for the user
-    const plans = await Plan.find({ createdBy: userId })
-        .select('name createdAt updatedAt topics dsa aptitude competition duration status')
+    // Fetch all plans (Plan model doesn't have createdBy field)
+    const plans = await Plan.find({})
+        .select('aptitude dsa subject createdAt updatedAt')
         .sort({ createdAt: -1 })
         .limit(50)
         .lean();
@@ -29,7 +30,7 @@ export const getUserHistory = asyncHandler(async (req, res, next) => {
     // Transform interviews to history format
     const interviewHistory = interviews.map(interview => {
         const score = interview.performanceAnalysis?.overallScore || 0;
-        const feedback = interview.performanceAnalysis?.summary || '';
+        const feedback = interview.interviewSummary?.summary || interview.performanceAnalysis?.detailedFeedback || '';
 
         // Extract topics from transcriptions or use topic
         const topics = interview.topic ? [interview.topic] : [];
@@ -38,7 +39,7 @@ export const getUserHistory = asyncHandler(async (req, res, next) => {
             id: interview._id,
             type: 'interview',
             title: `${interview.topic || 'Interview'} - ${interview.level || 'General'} Level`,
-            date: interview.createdAt,
+            date: (interview as any).createdAt,
             time: interview.startedAt ? new Date(interview.startedAt).toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
@@ -58,39 +59,33 @@ export const getUserHistory = asyncHandler(async (req, res, next) => {
 
     // Transform plans to history format
     const planHistory = plans.map(plan => {
-        // Calculate total tasks and completed tasks
-        const allTasks = [
-            ...(plan.dsa || []),
-            ...(plan.aptitude || []),
-            ...(plan.competition || [])
-        ];
+        // Calculate total tasks
+        const dsaTasks = plan.dsa || [];
+        const aptitudeTasks = plan.aptitude || [];
 
+        const allTasks = [...dsaTasks, ...aptitudeTasks];
         const totalTasks = allTasks.length;
-        const completedTasks = allTasks.filter(task => task.completed).length;
-        const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
-        // Determine status based on progress
-        let status = 'in-progress';
-        if (progress === 100) {
-            status = 'completed';
-        } else if (progress === 0 && plan.status === 'inactive') {
-            status = 'not-started';
-        }
+        // Since Plan model doesn't have completed field, set progress to 0
+        const progress = 0;
 
-        // Extract topics
-        const topics = plan.topics || [];
+        // Determine status
+        let status = totalTasks > 0 ? 'in-progress' : 'not-started';
+
+        // Extract topics from tasks
+        const topics = allTasks.map(task => task.topic).filter(Boolean);
 
         return {
             id: plan._id,
             type: 'plan',
-            title: plan.name || 'Study Plan',
-            date: plan.createdAt,
-            time: new Date(plan.createdAt).toLocaleTimeString('en-US', {
+            title: `Study Plan - ${totalTasks} tasks`,
+            date: (plan as any).createdAt,
+            time: (plan as any).createdAt ? new Date((plan as any).createdAt).toLocaleTimeString('en-US', {
                 hour: '2-digit',
                 minute: '2-digit',
                 hour12: false
-            }),
-            duration: plan.duration ? `${plan.duration} days` : 'N/A',
+            }) : 'N/A',
+            duration: `${totalTasks} tasks`,
             status,
             progress,
             topics
@@ -108,13 +103,8 @@ export const getUserHistory = asyncHandler(async (req, res, next) => {
         ? Math.round(interviews.reduce((sum, i) => sum + (i.performanceAnalysis?.overallScore || 0), 0) / interviews.length)
         : 0;
 
-    // Count achievements (e.g., high scores, completed plans)
-    const achievements = interviews.filter(i => (i.performanceAnalysis?.overallScore || 0) >= 80).length +
-        plans.filter(p => {
-            const allTasks = [...(p.dsa || []), ...(p.aptitude || []), ...(p.competition || [])];
-            const completedTasks = allTasks.filter(t => t.completed).length;
-            return allTasks.length > 0 && completedTasks === allTasks.length;
-        }).length;
+    // Count achievements (high score interviews only, since Plan doesn't track completion)
+    const achievements = interviews.filter(i => (i.performanceAnalysis?.overallScore || 0) >= 80).length;
 
     return apiResponse(res, 200, "User history fetched successfully", {
         history: combinedHistory,
