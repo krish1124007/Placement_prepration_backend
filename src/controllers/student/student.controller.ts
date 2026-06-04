@@ -445,7 +445,16 @@ const removeAchievement = asyncHandler(async (req: Request, res: Response, next:
         throw new ApiError(404, "Student not found");
     }
 
-    const idx = parseInt(index);
+    if (!index) {
+        throw new ApiError(400, "Achievement index is required");
+    }
+
+    const idx = parseInt(index as string);
+    
+    if (!student.achievements) {
+        student.achievements = [];
+    }
+
     if (isNaN(idx) || idx < 0 || idx >= student.achievements.length) {
         throw new ApiError(400, "Invalid achievement index");
     }
