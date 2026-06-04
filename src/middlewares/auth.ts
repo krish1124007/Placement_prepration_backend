@@ -14,7 +14,7 @@ export const auth = (req: Request, res: Response, next: NextFunction) => {
         if (err) {
             return res.status(401).json({ message: "Unauthorized" });
         }
-        req.user = user;
+        req.user = user as any; // Cast to any or specifically to our type
         next();
     });
 }

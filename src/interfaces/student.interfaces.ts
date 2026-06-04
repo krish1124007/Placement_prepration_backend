@@ -24,6 +24,8 @@ interface IStudent extends Document {
     achievements?: string[],
     interests?: string[],
     ultra_focus_mode?: boolean,
+    total_interview:number,
+    allow_interview:number,
     generateAccessToken: () => string,
     comparePassword: (password: string) => Promise<boolean>
 }

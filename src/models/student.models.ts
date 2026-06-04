@@ -92,6 +92,14 @@ const StudentSchema = new mongoose.Schema<IStudentDocument>({
     ultra_focus_mode: {
         type: Boolean,
         default: false
+    },
+    total_interview:{
+        type:Number,
+        default:0
+    },
+    allow_interview:{
+        type:Number,
+        default:5
     }
 })
 

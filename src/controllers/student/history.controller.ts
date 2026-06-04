@@ -8,7 +8,7 @@ import type { Request, Response, NextFunction } from "express";
 
 // Get combined history (interviews + plans) for a user
 export const getUserHistory = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
-    const userId = (req.user as any)?._id;
+    const userId = req.user?._id;
 
     if (!userId) {
         throw new ApiError(401, "Unauthorized");

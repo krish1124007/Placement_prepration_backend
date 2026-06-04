@@ -28,6 +28,8 @@ const listTheRating = asyncHandler(async(req:Request,res:Response)=>{
 })
 
 
+
+
 export {
     createRating,
     listTheRating

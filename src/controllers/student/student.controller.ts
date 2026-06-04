@@ -119,6 +119,20 @@ const editUser = asyncHandler(async (req: Request, res: Response, next: NextFunc
     return apiResponse(res, 200, "Student updated successfully", updatedStudent)
 })
 
+const isUserHasLeftAttempt = asyncHandler(async (req: Request, res: Response) => {
+    const user = req.user;
+
+    const currentUser = await Student.findById(user?._id).select("total_interview allow_interview");
+
+    if (!currentUser) {
+        throw new ApiError(404, "User not found");
+    }
+
+    if (currentUser.total_interview >= currentUser.allow_interview) {
+        return apiResponse(res, 200, "User has no attempts left", false)
+    }
+    return apiResponse(res, 200, "User has attempts left", true)
+})
 
 const googleLogin = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
     const { accessToken } = req.body;
@@ -404,5 +418,6 @@ export {
     disconnectGithub,
     getGithubRepos,
     getUserPublic,
-    toggleUltraFocusMode
+    toggleUltraFocusMode,
+    isUserHasLeftAttempt
 }

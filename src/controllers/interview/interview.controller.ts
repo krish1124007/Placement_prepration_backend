@@ -7,6 +7,7 @@ import type { Response, Request, NextFunction } from "express";
 import * as geminiService from "../../services/gemini.service.js";
 import * as interviewAnalysisService from "../../services/interviewAnalysis.service.js";
 import { sendMail } from "../../utils/sendMail.js";
+import { Student } from "../../models/student.models.js";
 
 
 // Create new interview session
@@ -59,6 +60,14 @@ const createInterviewSession = asyncHandler(async (req: Request, res: Response, 
     if (!session) {
         console.error('❌ Failed to create session in database');
         throw new ApiError(400, "Failed to create interview session");
+    }
+
+    const updatedUser = await Student.findByIdAndUpdate(userId, {
+        $inc: { total_interview: 1 }
+    }, { new: true });
+
+    if (!updatedUser) {
+        throw new ApiError(404, "User not found");
     }
 
     console.log('✅ Interview session created successfully:', session._id);
