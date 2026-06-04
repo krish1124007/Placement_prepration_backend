@@ -10,7 +10,9 @@ import {
     getGithubRepos,
     getUserPublic,
     toggleUltraFocusMode,
-    isUserHasLeftAttempt
+    isUserHasLeftAttempt,
+    addAchievement,
+    removeAchievement
 } from "../controllers/student/student.controller.js";
 import { getUserHistory } from "../controllers/student/history.controller.js";
 import { Router } from "express";
@@ -31,5 +33,7 @@ router.get("/public/:userid", getUserPublic); // Public endpoint for portfolio
 router.get("/history", auth, getUserHistory); // Get user's complete history
 router.put("/toggle-ultra-focus/:userid", auth, toggleUltraFocusMode);
 router.get("/left-attempt", auth, isUserHasLeftAttempt);
+router.post("/add-achievement/:userid", auth, addAchievement);
+router.delete("/remove-achievement/:userid/:index", auth, removeAchievement);
 
 export const user_router = router;

@@ -405,7 +405,58 @@ const toggleUltraFocusMode = asyncHandler(async (req: Request, res: Response, ne
 
     return apiResponse(res, 200, "Ultra focus mode updated successfully", updatedStudent);
 });
+// Add personal achievement
+const addAchievement = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    const { userid } = req.params;
+    const { achievement } = req.body;
 
+    if (!userid) {
+        throw new ApiError(400, "User id is required");
+    }
+
+    if (!achievement || typeof achievement !== 'string') {
+        throw new ApiError(400, "Achievement text is required");
+    }
+
+    const updatedStudent = await Student.findByIdAndUpdate(
+        userid,
+        { $push: { achievements: achievement } },
+        { new: true }
+    ).select("-password");
+
+    if (!updatedStudent) {
+        throw new ApiError(404, "Student not found");
+    }
+
+    return apiResponse(res, 200, "Achievement added successfully", updatedStudent);
+});
+
+// Remove personal achievement
+const removeAchievement = asyncHandler(async (req: Request, res: Response, next: NextFunction) => {
+    const { userid, index } = req.params;
+
+    if (!userid) {
+        throw new ApiError(400, "User id is required");
+    }
+
+    const student = await Student.findById(userid);
+    
+    if (!student) {
+        throw new ApiError(404, "Student not found");
+    }
+
+    const idx = parseInt(index);
+    if (isNaN(idx) || idx < 0 || idx >= student.achievements.length) {
+        throw new ApiError(400, "Invalid achievement index");
+    }
+
+    student.achievements.splice(idx, 1);
+    await student.save();
+
+    const updatedStudent = await Student.findById(userid).select("-password");
+
+    return apiResponse(res, 200, "Achievement removed successfully", updatedStudent);
+});
 
 export {
     createStudent,
@@ -419,5 +470,7 @@ export {
     getGithubRepos,
     getUserPublic,
     toggleUltraFocusMode,
-    isUserHasLeftAttempt
+    isUserHasLeftAttempt,
+    addAchievement,
+    removeAchievement
 }
